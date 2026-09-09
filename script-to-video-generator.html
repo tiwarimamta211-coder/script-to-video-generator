@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reelscript — Script to Video Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14161b;
+    --panel:#1b1e25;
+    --panel-raised:#20232b;
+    --border:#2b2e37;
+    --border-soft:#24272f;
+    --amber:#e3a23c;
+    --amber-dim:#8a662a;
+    --teal:#3d7f78;
+    --teal-dim:#284d48;
+    --text:#ece9e1;
+    --text-dim:#9a9ca6;
+    --text-faint:#63656e;
+    --danger:#c1584a;
+    --radius:3px;
+    --font-display:'Bricolage Grotesque', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--amber);color:#14161b;}
+  button{font-family:inherit;}
+  input, textarea, select{font-family:inherit;color:var(--text);}
+
+  a.skip-link{position:absolute;left:-9999px;}
+  a.skip-link:focus{left:8px;top:8px;background:var(--amber);color:#14161b;padding:6px 10px;z-index:999;}
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .sprocket{
+    width:30px;height:30px;flex:none;
+    background-image:
+      radial-gradient(circle at 6px 6px, var(--bg) 2.6px, transparent 2.7px),
+      radial-gradient(circle at 24px 6px, var(--bg) 2.6px, transparent 2.7px),
+      radial-gradient(circle at 6px 24px, var(--bg) 2.6px, transparent 2.7px),
+      radial-gradient(circle at 24px 24px, var(--bg) 2.6px, transparent 2.7px);
+    background-color:var(--amber);
+    border-radius:6px;
+  }
+  .brand h1{
+    font-family:var(--font-display);
+    font-size:1.32rem;font-weight:700;margin:0;letter-spacing:0.2px;
+  }
+  .brand p{margin:0;font-size:0.76rem;color:var(--text-dim);}
+  .top-meta{display:flex;align-items:center;gap:18px;font-size:0.78rem;color:var(--text-faint);font-family:var(--font-mono);}
+  .rec-dot{width:7px;height:7px;border-radius:50%;background:var(--text-faint);display:inline-block;margin-right:6px;}
+  .rec-dot.live{background:var(--danger);box-shadow:0 0 0 3px rgba(193,88,74,0.18);animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+  /* ---------- Layout ---------- */
+  .studio{
+    display:grid;
+    grid-template-columns:320px minmax(0,1fr) 380px;
+    gap:1px;
+    background:var(--border);
+    min-height:calc(100vh - 68px);
+  }
+  .pane{background:var(--panel);padding:22px;overflow-y:auto;}
+  .pane h2{
+    font-family:var(--font-display);font-size:1rem;font-weight:600;
+    margin:0 0 4px;display:flex;align-items:center;gap:8px;
+  }
+  .pane h2 .num{
+    font-family:var(--font-mono);font-size:0.72rem;color:var(--amber);
+    border:1px solid var(--amber-dim);border-radius:20px;padding:1px 7px;
+  }
+  .pane .sub{font-size:0.78rem;color:var(--text-dim);margin:0 0 18px;line-height:1.5;}
+
+  label.field-label{display:block;font-size:0.74rem;color:var(--text-dim);margin:16px 0 6px;}
+  label.field-label:first-of-type{margin-top:0;}
+
+  textarea#scriptInput{
+    width:100%;min-height:220px;resize:vertical;
+    background:var(--panel-raised);border:1px solid var(--border);border-radius:var(--radius);
+    color:var(--text);padding:12px;font-size:0.88rem;line-height:1.6;
+  }
+  textarea#scriptInput:focus, input:focus, select:focus, button:focus-visible{
+    outline:2px solid var(--amber);outline-offset:1px;
+  }
+  .row{display:flex;gap:10px;}
+  .row > *{flex:1;}
+  select, input[type=number]{
+    width:100%;background:var(--panel-raised);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--text);padding:8px 10px;font-size:0.84rem;
+  }
+  .aspect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+  .aspect-opt{
+    border:1px solid var(--border);background:var(--panel-raised);border-radius:var(--radius);
+    padding:10px 6px;text-align:center;cursor:pointer;font-size:0.72rem;color:var(--text-dim);
+  }
+  .aspect-opt .shape{margin:0 auto 6px;background:var(--border-soft);border:1px solid var(--text-faint);}
+  .aspect-opt[data-ar="16:9"] .shape{width:34px;height:19px;}
+  .aspect-opt[data-ar="9:16"] .shape{width:15px;height:27px;}
+  .aspect-opt[data-ar="1:1"] .shape{width:24px;height:24px;}
+  .aspect-opt.active{border-color:var(--amber);color:var(--amber);}
+  .aspect-opt.active .shape{border-color:var(--amber);background:rgba(227,162,60,0.1);}
+
+  .theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px;}
+  .theme-swatch{
+    height:34px;border-radius:var(--radius);cursor:pointer;border:2px solid transparent;
+  }
+  .theme-swatch.active{border-color:var(--text);}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:10px 16px;border-radius:var(--radius);border:1px solid var(--border);
+    background:var(--panel-raised);color:var(--text);font-size:0.84rem;font-weight:500;
+    cursor:pointer;transition:border-color .15s ease, background .15s ease;
+  }
+  .btn:hover{border-color:var(--text-faint);}
+  .btn-primary{background:var(--amber);color:#191a1c;border-color:var(--amber);font-weight:600;}
+  .btn-primary:hover{background:#eeb35c;}
+  .btn-primary:disabled{background:var(--amber-dim);border-color:var(--amber-dim);color:#4a3d20;cursor:not-allowed;}
+  .btn-teal{background:var(--teal);border-color:var(--teal);color:#eef7f5;}
+  .btn-teal:hover{background:#478d85;}
+  .btn-ghost{background:transparent;}
+  .btn-block{width:100%;}
+  .btn-sm{padding:6px 9px;font-size:0.72rem;}
+  .btn-icon{padding:6px 8px;line-height:1;}
+
+  /* ---------- Storyboard (center pane) ---------- */
+  .storyboard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .scene-count{font-family:var(--font-mono);font-size:0.76rem;color:var(--text-faint);}
+  #sceneList{display:flex;flex-direction:column;gap:14px;}
+  .empty-state{
+    border:1px dashed var(--border);border-radius:var(--radius);
+    padding:40px 20px;text-align:center;color:var(--text-faint);font-size:0.84rem;
+  }
+  .scene-card{
+    display:grid;grid-template-columns:96px 1fr;gap:14px;
+    background:var(--panel-raised);border:1px solid var(--border);border-radius:4px;
+    padding:14px;position:relative;
+  }
+  .scene-card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:10px;
+    background-image:
+      radial-gradient(circle at 5px 10px, var(--panel) 2.3px, transparent 2.4px),
+      radial-gradient(circle at 5px 26px, var(--panel) 2.3px, transparent 2.4px),
+      radial-gradient(circle at 5px 42px, var(--panel) 2.3px, transparent 2.4px);
+    background-repeat:repeat-y;background-size:10px 42px;
+    border-radius:4px 0 0 4px;opacity:0.6;
+  }
+  .scene-thumb{
+    width:96px;height:96px;border-radius:3px;overflow:hidden;position:relative;
+    background:linear-gradient(135deg,var(--teal),var(--teal-dim));
+    display:flex;align-items:center;justify-content:center;flex:none;
+    border:1px solid var(--border);
+  }
+  .scene-thumb img{width:100%;height:100%;object-fit:cover;}
+  .scene-thumb .thumb-num{
+    position:absolute;top:4px;left:5px;font-family:var(--font-mono);font-size:0.68rem;
+    color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);
+  }
+  .scene-thumb .thumb-upload{
+    position:absolute;bottom:0;left:0;right:0;
+    font-size:0.62rem;text-align:center;padding:3px 0;
+    background:rgba(0,0,0,0.55);color:#fff;cursor:pointer;
+  }
+  .scene-body textarea.scene-text{
+    width:100%;min-height:58px;resize:vertical;background:var(--panel);
+    border:1px solid var(--border);border-radius:3px;color:var(--text);
+    padding:8px;font-size:0.82rem;line-height:1.45;
+  }
+  .scene-controls{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;}
+  .scene-controls .dur{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text-dim);}
+  .scene-controls input[type=range]{width:90px;accent-color:var(--amber);}
+  .scene-controls input[type=color]{
+    width:26px;height:26px;border:1px solid var(--border);border-radius:3px;background:none;padding:0;cursor:pointer;
+  }
+  .scene-controls .spacer{flex:1;}
+  .icon-btn{
+    width:26px;height:26px;border-radius:3px;border:1px solid var(--border);background:var(--panel);
+    color:var(--text-dim);cursor:pointer;font-size:0.76rem;display:flex;align-items:center;justify-content:center;
+  }
+  .icon-btn:hover{color:var(--text);border-color:var(--text-faint);}
+  .icon-btn.danger:hover{color:var(--danger);border-color:var(--danger);}
+
+  /* ---------- Preview / Export pane ---------- */
+  .monitor{
+    background:#0c0d10;border:1px solid var(--border);border-radius:4px;
+    padding:10px;margin-bottom:14px;
+  }
+  .canvas-wrap{
+    position:relative;width:100%;background:#000;border-radius:2px;overflow:hidden;
+  }
+  canvas#previewCanvas{width:100%;height:auto;display:block;}
+  .canvas-wrap .caption-hint{
+    position:absolute;bottom:8px;left:8px;right:8px;
+    font-size:0.7rem;color:rgba(255,255,255,0.55);text-align:center;pointer-events:none;
+  }
+  .transport{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .scrub{
+    flex:1;height:4px;background:var(--border);border-radius:2px;position:relative;cursor:pointer;
+  }
+  .scrub .fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);border-radius:2px;width:0%;}
+  .time-label{font-family:var(--font-mono);font-size:0.7rem;color:var(--text-faint);min-width:76px;text-align:right;}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-soft);}
+  .toggle-row:last-of-type{border-bottom:none;}
+  .toggle-row .label{font-size:0.82rem;}
+  .toggle-row .hint{font-size:0.7rem;color:var(--text-faint);margin-top:2px;}
+  .switch{position:relative;width:38px;height:21px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .track{
+    position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:.15s;
+  }
+  .switch .track::before{
+    content:"";position:absolute;width:15px;height:15px;left:3px;top:3px;
+    background:var(--text-dim);border-radius:50%;transition:.15s;
+  }
+  .switch input:checked + .track{background:var(--teal);}
+  .switch input:checked + .track::before{transform:translateX(17px);background:#eef7f5;}
+
+  .music-drop{
+    border:1px dashed var(--border);border-radius:3px;padding:12px;text-align:center;
+    font-size:0.76rem;color:var(--text-dim);cursor:pointer;margin-top:8px;
+  }
+  .music-drop.has-file{border-color:var(--teal);color:var(--text);}
+  .vol-row{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .vol-row input[type=range]{flex:1;accent-color:var(--teal);}
+
+  .export-progress{margin-top:14px;display:none;}
+  .export-progress.active{display:block;}
+  .export-progress .bar{height:6px;background:var(--border);border-radius:4px;overflow:hidden;}
+  .export-progress .bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--teal),var(--amber));transition:width .2s linear;}
+  .export-progress .txt{font-size:0.72rem;color:var(--text-dim);margin-top:6px;font-family:var(--font-mono);}
+
+  .download-box{
+    margin-top:12px;padding:12px;border:1px solid var(--teal);border-radius:3px;
+    background:rgba(61,127,120,0.08);display:none;
+  }
+  .download-box.active{display:block;}
+  .download-box a{color:var(--amber);text-decoration:none;font-weight:600;font-size:0.84rem;}
+  .download-box a:hover{text-decoration:underline;}
+  .download-box p{margin:0 0 8px;font-size:0.76rem;color:var(--text-dim);}
+
+  .note{font-size:0.72rem;color:var(--text-faint);line-height:1.5;margin-top:10px;}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1080px){
+    .studio{grid-template-columns:1fr;}
+    .pane{border-bottom:1px solid var(--border);}
+    header.top{padding:14px 16px;}
+    .pane{padding:18px;}
+  }
+  @media (max-width: 480px){
+    .brand h1{font-size:1.08rem;}
+    .top-meta{display:none;}
+    .scene-card{grid-template-columns:72px 1fr;}
+    .scene-thumb{width:72px;height:72px;}
+    .aspect-grid{grid-template-columns:repeat(3,1fr);}
+  }
+</style>
+</head>
+<body>
+<a href="#scriptInput" class="skip-link">Skip to script input</a>
+
+<header class="top">
+  <div class="brand">
+    <div class="sprocket" aria-hidden="true"></div>
+    <div>
+      <h1>Reelscript</h1>
+      <p>Script to video generator</p>
+    </div>
+  </div>
+  <div class="top-meta">
+    <span><span class="rec-dot" id="recDot"></span><span id="statusText">Idle</span></span>
+    <span id="clockOut">00:00 / 00:00</span>
+  </div>
+</header>
+
+<main class="studio">
+
+  <!-- ============ PANE 1: SCRIPT & SETTINGS ============ -->
+  <section class="pane" aria-label="Script and settings">
+    <h2><span class="num">1</span> Script</h2>
+    <p class="sub">Paste your script. Reelscript breaks it into scenes automatically — one blank line starts a new scene, or let it split by word count.</p>
+
+    <label class="field-label" for="scriptInput">Script text</label>
+    <textarea id="scriptInput" placeholder="A quiet harbor at dawn. Mist rolls over still water.
+
+A fishing boat cuts through the fog, engine humming low.
+
+On deck, a woman scans the horizon, coffee in hand, waiting for the sun.">A quiet harbor at dawn. Mist rolls slowly over still water, and the world hasn't woken up yet.
+
+A single fishing boat cuts through the fog, its engine humming low against the silence.
+
+On deck, a woman scans the horizon, coffee in hand, waiting for the first light to break.
+
+The sun finally clears the hills, turning the water into hammered gold.
+
+She smiles, ties off the last rope, and steers the boat toward open sea.</textarea>
+
+    <div class="row">
+      <div>
+        <label class="field-label" for="splitMode">Split scenes by</label>
+        <select id="splitMode">
+          <option value="paragraph">Blank line (paragraph)</option>
+          <option value="sentence">Sentence</option>
+          <option value="words">Word count</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="wordsPerScene">Words / scene</label>
+        <input type="number" id="wordsPerScene" value="18" min="4" max="80">
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="generateBtn" style="margin-top:16px;">Generate storyboard</button>
+
+    <label class="field-label">Frame</label>
+    <div class="aspect-grid" id="aspectGrid">
+      <div class="aspect-opt active" data-ar="16:9"><div class="shape"></div>Widescreen</div>
+      <div class="aspect-opt" data-ar="9:16"><div class="shape"></div>Vertical</div>
+      <div class="aspect-opt" data-ar="1:1"><div class="shape"></div>Square</div>
+    </div>
+
+    <label class="field-label">Theme</label>
+    <div class="theme-grid" id="themeGrid"></div>
+
+    <label class="field-label" for="fontChoice">Caption font</label>
+    <select id="fontChoice">
+      <option value="'Bricolage Grotesque', sans-serif" selected>Bricolage Grotesque</option>
+      <option value="'Inter', sans-serif">Inter</option>
+      <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+    </select>
+
+    <p class="note">Everything runs locally in your browser — no script or media is uploaded anywhere.</p>
+  </section>
+
+  <!-- ============ PANE 2: STORYBOARD ============ -->
+  <section class="pane" aria-label="Storyboard editor">
+    <div class="storyboard-head">
+      <h2 style="margin:0;"><span class="num">2</span> Storyboard</h2>
+      <span class="scene-count" id="sceneCount">0 scenes · 0:00 total</span>
+    </div>
+    <p class="sub">Edit each scene's text, background image, duration and caption color. Reorder with the arrows.</p>
+    <div id="sceneList">
+      <div class="empty-state" id="emptyState">No scenes yet — write a script and click <strong>Generate storyboard</strong>.</div>
+    </div>
+    <button class="btn btn-ghost btn-block" id="addSceneBtn" style="margin-top:14px;">+ Add blank scene</button>
+  </section>
+
+  <!-- ============ PANE 3: PREVIEW & EXPORT ============ -->
+  <section class="pane" aria-label="Preview and export">
+    <h2><span class="num">3</span> Preview</h2>
+    <p class="sub">Play through the storyboard, then render it to a downloadable video file.</p>
+
+    <div class="monitor">
+      <div class="canvas-wrap">
+        <canvas id="previewCanvas" width="960" height="540"></canvas>
+      </div>
+      <div class="transport">
+        <button class="btn btn-icon" id="playBtn" aria-label="Play">▶</button>
+        <div class="scrub" id="scrub"><div class="fill" id="scrubFill"></div></div>
+        <span class="time-label" id="timeLabel">0:00 / 0:00</span>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="label">Voice narration (preview)</div>
+        <div class="hint">Reads each scene aloud while playing. Browser text-to-speech.</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="narrationToggle"><span class="track"></span></label>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="label">Ken Burns motion</div>
+        <div class="hint">Slow zoom/pan on background images.</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="kenBurnsToggle" checked><span class="track"></span></label>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="label">Burned-in captions</div>
+        <div class="hint">Show scene text over the frame.</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="captionsToggle" checked><span class="track"></span></label>
+    </div>
+
+    <label class="field-label">Background music (optional)</label>
+    <div class="music-drop" id="musicDrop">Click to upload an audio file</div>
+    <input type="file" id="musicInput" accept="audio/*" style="display:none;">
+    <div class="vol-row">
+      <span style="font-size:0.7rem;color:var(--text-faint);">Vol</span>
+      <input type="range" id="musicVolume" min="0" max="100" value="60">
+    </div>
+
+    <button class="btn btn-primary btn-block" id="exportBtn" style="margin-top:18px;">Render &amp; download video</button>
+
+    <div class="export-progress" id="exportProgress">
+      <div class="bar"><div class="bar-fill" id="exportBarFill"></div></div>
+      <div class="txt" id="exportTxt">Rendering scene 1…</div>
+    </div>
+
+    <div class="download-box" id="downloadBox">
+      <p>Your video is ready.</p>
+      <a id="downloadLink" download="reelscript-video.webm">Download reelscript-video.webm</a>
+    </div>
+
+    <p class="note">Exports as WebM (VP9/Opus), the format browsers can encode locally. Background music is mixed into the export; live narration is a preview-only aid since browsers can't capture synthesized speech as audio.</p>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- THEMES ---------------- */
+  const THEMES = [
+    { name:"Harbor",  a:"#1c3f3d", b:"#0d1f1e", caption:"#f4efe2" },
+    { name:"Amber",   a:"#5a3a12", b:"#241505", caption:"#fbe9c9" },
+    { name:"Dusk",    a:"#3a2350", b:"#160c22", caption:"#ece3f7" },
+    { name:"Ember",   a:"#5c1f22", b:"#210a0c", caption:"#f6e3e0" },
+    { name:"Slate",   a:"#2a3038", b:"#101317", caption:"#e7e9ee" },
+  ];
+  let currentTheme = 0;
+
+  const themeGrid = document.getElementById('themeGrid');
+  THEMES.forEach((t, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'theme-swatch' + (i===0 ? ' active':'');
+    sw.style.background = `linear-gradient(135deg, ${t.a}, ${t.b})`;
+    sw.title = t.name;
+    sw.addEventListener('click', () => {
+      currentTheme = i;
+      [...themeGrid.children].forEach(c=>c.classList.remove('active'));
+      sw.classList.add('active');
+      applyThemeToUnsetScenes();
+      drawCurrentFrame();
+    });
+    themeGrid.appendChild(sw);
+  });
+
+  function applyThemeToUnsetScenes(){
+    // re-tint scenes that never had a custom color/image touched (bgTouched=false)
+    state.scenes.forEach(s => { if(!s.bgTouched && !s.image) s.captionColor = THEMES[currentTheme].caption; });
+    renderStoryboard();
+  }
+
+  /* ---------------- ASPECT RATIO ---------------- */
+  const ASPECTS = { "16:9":[1280,720], "9:16":[720,1280], "1:1":[960,960] };
+  let currentAspect = "16:9";
+  const aspectGrid = document.getElementById('aspectGrid');
+  aspectGrid.addEventListener('click', (e)=>{
+    const opt = e.target.closest('.aspect-opt');
+    if(!opt) return;
+    currentAspect = opt.dataset.ar;
+    [...aspectGrid.children].forEach(c=>c.classList.remove('active'));
+    opt.classList.add('active');
+    resizeCanvas();
+    drawCurrentFrame();
+  });
+
+  /* ---------------- STATE ---------------- */
+  const state = {
+    scenes: [],  // {id, text, image(dataURL|null), color1, color2, duration, captionColor, bgTouched}
+    playing: false,
+    currentIndex: 0,
+    elapsedInScene: 0,
+    lastTs: null,
+    musicFile: null,
+    musicBuffer: null,
+  };
+  let idCounter = 1;
+
+  const canvas = document.getElementById('previewCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas(){
+    const [w,h] = ASPECTS[currentAspect];
+    canvas.width = w; canvas.height = h;
+  }
+  resizeCanvas();
+
+  /* ---------------- SCENE GENERATION ---------------- */
+  const scriptInput = document.getElementById('scriptInput');
+  const splitMode = document.getElementById('splitMode');
+  const wordsPerSceneInput = document.getElementById('wordsPerScene');
+
+  function splitScript(text, mode, wps){
+    text = text.trim();
+    if(!text) return [];
+    if(mode === 'paragraph'){
+      return text.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+    }
+    if(mode === 'sentence'){
+      return text.replace(/\n+/g,' ').match(/[^.!?]+[.!?]*/g)?.map(s=>s.trim()).filter(Boolean) || [text];
+    }
+    // words
+    const words = text.replace(/\n+/g,' ').split(/\s+/).filter(Boolean);
+    const chunks = [];
+    for(let i=0;i<words.length;i+=wps){
+      chunks.push(words.slice(i,i+wps).join(' '));
+    }
+    return chunks;
+  }
+
+  function estimateDuration(text){
+    const words = text.split(/\s+/).filter(Boolean).length;
+    return Math.max(2.5, Math.min(10, words / 2.6));
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', () => {
+    const chunks = splitScript(scriptInput.value, splitMode.value, parseInt(wordsPerSceneInput.value,10) || 18);
+    if(chunks.length === 0){
+      alert('Write a script first.');
+      return;
+    }
+    state.scenes = chunks.map((text) => makeScene(text));
+    state.currentIndex = 0; state.elapsedInScene = 0;
+    renderStoryboard();
+    drawCurrentFrame();
+    setStatus('Storyboard ready');
+  });
+
+  function makeScene(text){
+    const t = THEMES[currentTheme];
+    return {
+      id: idCounter++,
+      text: text,
+      image: null,
+      color1: t.a, color2: t.b,
+      captionColor: t.caption,
+      duration: estimateDuration(text),
+      bgTouched: false,
+    };
+  }
+
+  document.getElementById('addSceneBtn').addEventListener('click', () => {
+    state.scenes.push(makeScene('New scene text goes here.'));
+    renderStoryboard();
+  });
+
+  /* ---------------- STORYBOARD RENDER ---------------- */
+  const sceneList = document.getElementById('sceneList');
+  const emptyState = document.getElementById('emptyState');
+  const sceneCountLabel = document.getElementById('sceneCount');
+
+  function totalDuration(){
+    return state.scenes.reduce((s,sc)=>s+sc.duration, 0);
+  }
+  function fmtTime(sec){
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec/60), s = sec%60;
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function renderStoryboard(){
+    sceneList.innerHTML = '';
+    emptyState.style.display = state.scenes.length ? 'none' : 'block';
+    sceneCountLabel.textContent = `${state.scenes.length} scene${state.scenes.length===1?'':'s'} · ${fmtTime(totalDuration())} total`;
+
+    state.scenes.forEach((scene, idx) => {
+      const card = document.createElement('div');
+      card.className = 'scene-card';
+      card.innerHTML = `
+        <div class="scene-thumb" style="${scene.image ? '' : `background:linear-gradient(135deg, ${scene.color1}, ${scene.color2});`}">
+          <span class="thumb-num">${idx+1}</span>
+          ${scene.image ? `<img src="${scene.image}" alt="">` : ''}
+          <label class="thumb-upload">${scene.image ? 'Change image' : 'Add image'}
+            <input type="file" accept="image/*" data-role="img-upload" style="display:none;">
+          </label>
+        </div>
+        <div class="scene-body">
+          <textarea class="scene-text" data-role="text">${escapeHtml(scene.text)}</textarea>
+          <div class="scene-controls">
+            <div class="dur">
+              <span>${scene.duration.toFixed(1)}s</span>
+              <input type="range" min="1" max="15" step="0.5" value="${scene.duration}" data-role="duration">
+            </div>
+            <input type="color" value="${scene.captionColor}" data-role="caption-color" title="Caption color">
+            <div class="spacer"></div>
+            <button class="icon-btn" data-role="up" title="Move up" ${idx===0?'disabled':''}>↑</button>
+            <button class="icon-btn" data-role="down" title="Move down" ${idx===state.scenes.length-1?'disabled':''}>↓</button>
+            <button class="icon-btn danger" data-role="remove" title="Remove scene">✕</button>
+          </div>
+        </div>
+      `;
+      // wire events
+      card.querySelector('[data-role="text"]').addEventListener('input', (e)=>{
+        scene.text = e.target.value;
+        sceneCountLabel.textContent = `${state.scenes.length} scenes · ${fmtTime(totalDuration())} total`;
+      });
+      card.querySelector('[data-role="duration"]').addEventListener('input', (e)=>{
+        scene.duration = parseFloat(e.target.value);
+        card.querySelector('.dur span').textContent = scene.duration.toFixed(1)+'s';
+        sceneCountLabel.textContent = `${state.scenes.length} scenes · ${fmtTime(totalDuration())} total`;
+      });
+      card.querySelector('[data-role="caption-color"]').addEventListener('input', (e)=>{
+        scene.captionColor = e.target.value;
+      });
+      card.querySelector('[data-role="img-upload"]').addEventListener('change', (e)=>{
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          scene.image = reader.result;
+          scene.bgTouched = true;
+          renderStoryboard();
+          drawCurrentFrame();
+        };
+        reader.readAsDataURL(file);
+      });
+      card.querySelector('[data-role="up"]').addEventListener('click', ()=>{
+        if(idx===0) return;
+        [state.scenes[idx-1], state.scenes[idx]] = [state.scenes[idx], state.scenes[idx-1]];
+        renderStoryboard();
+      });
+      card.querySelector('[data-role="down"]').addEventListener('click', ()=>{
+        if(idx===state.scenes.length-1) return;
+        [state.scenes[idx+1], state.scenes[idx]] = [state.scenes[idx], state.scenes[idx+1]];
+        renderStoryboard();
+      });
+      card.querySelector('[data-role="remove"]').addEventListener('click', ()=>{
+        state.scenes.splice(idx,1);
+        if(state.currentIndex >= state.scenes.length) state.currentIndex = Math.max(0,state.scenes.length-1);
+        renderStoryboard();
+        drawCurrentFrame();
+      });
+      sceneList.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+
+  /* ---------------- CANVAS RENDERING ---------------- */
+  const fontChoice = document.getElementById('fontChoice');
+  const kenBurnsToggle = document.getElementById('kenBurnsToggle');
+  const captionsToggle = document.getElementById('captionsToggle');
+  const imgCache = new Map();
+
+  function getImage(src){
+    if(imgCache.has(src)) return imgCache.get(src);
+    const img = new Image();
+    img.src = src;
+    imgCache.set(src, img);
+    return img;
+  }
+
+  function wrapText(context, text, maxWidth){
+    const words = text.split(/\s+/);
+    const lines = [];
+    let line = '';
+    for(const w of words){
+      const test = line ? line + ' ' + w : w;
+      if(context.measureText(test).width > maxWidth && line){
+        lines.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if(line) lines.push(line);
+    return lines;
+  }
+
+  function drawScene(context, cw, ch, scene, progress){
+    // progress: 0..1 through this scene's duration
+    context.clearRect(0,0,cw,ch);
+
+    if(scene.image){
+      const img = getImage(scene.image);
+      const drawImg = () => {
+        const zoom = kenBurnsToggle.checked ? 1 + progress*0.08 : 1;
+        const iw = img.width, ih = img.height;
+        if(!iw || !ih) return;
+        const scale = Math.max(cw/iw, ch/ih) * zoom;
+        const dw = iw*scale, dh = ih*scale;
+        const dx = (cw-dw)/2 - (kenBurnsToggle.checked ? (progress-0.5)*20 : 0);
+        const dy = (ch-dh)/2;
+        context.drawImage(img, dx, dy, dw, dh);
+      };
+      if(img.complete && img.naturalWidth){
+        drawImg();
+      } else {
+        // fallback gradient while loading
+        const g = context.createLinearGradient(0,0,cw,ch);
+        g.addColorStop(0, scene.color1); g.addColorStop(1, scene.color2);
+        context.fillStyle = g; context.fillRect(0,0,cw,ch);
+        img.onload = () => drawCurrentFrame();
+      }
+    } else {
+      const g = context.createLinearGradient(0,0,cw,ch);
+      g.addColorStop(0, scene.color1); g.addColorStop(1, scene.color2);
+      context.fillStyle = g; context.fillRect(0,0,cw,ch);
+      // subtle vignette
+      const rg = context.createRadialGradient(cw/2,ch/2,ch*0.2,cw/2,ch/2,ch*0.75);
+      rg.addColorStop(0,'rgba(0,0,0,0)'); rg.addColorStop(1,'rgba(0,0,0,0.35)');
+      context.fillStyle = rg; context.fillRect(0,0,cw,ch);
+    }
+
+    if(captionsToggle.checked && scene.text){
+      const pad = cw*0.08;
+      const maxWidth = cw - pad*2;
+      const fontSize = Math.round(cw*0.032);
+      context.font = `600 ${fontSize}px ${fontChoice.value}`;
+      context.textBaseline = 'alphabetic';
+      const lines = wrapText(context, scene.text, maxWidth);
+      const lineHeight = fontSize*1.35;
+      const blockHeight = lines.length*lineHeight;
+      const bottomY = ch - ch*0.10;
+      const topY = bottomY - blockHeight;
+
+      // scrim
+      const scrim = context.createLinearGradient(0, topY-40, 0, ch);
+      scrim.addColorStop(0,'rgba(0,0,0,0)');
+      scrim.addColorStop(1,'rgba(0,0,0,0.55)');
+      context.fillStyle = scrim;
+      context.fillRect(0, topY-40, cw, ch-(topY-40));
+
+      const fadeIn = Math.min(1, progress/0.15);
+      context.globalAlpha = fadeIn;
+      context.fillStyle = scene.captionColor;
+      context.textAlign = 'center';
+      lines.forEach((ln,i)=>{
+        context.fillText(ln, cw/2, topY + lineHeight*(i+1) - fontSize*0.25);
+      });
+      context.globalAlpha = 1;
+    }
+
+    // film-frame corner ticks (subtle brand motif)
+    context.strokeStyle = 'rgba(255,255,255,0.14)';
+    context.lineWidth = Math.max(1, cw*0.0025);
+    const tick = cw*0.02;
+    [[0,0,1,1],[cw,0,-1,1],[0,ch,1,-1],[cw,ch,-1,-1]].forEach(([x,y,dx,dy])=>{
+      context.beginPath();
+      context.moveTo(x, y+dy*tick*2.2);
+      context.lineTo(x, y);
+      context.lineTo(x+dx*tick*2.2, y);
+      context.stroke();
+    });
+  }
+
+  function drawCurrentFrame(){
+    if(state.scenes.length===0){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#0c0d10';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#4a4d57';
+      ctx.font = `500 ${canvas.width*0.03}px 'Inter', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('No storyboard yet', canvas.width/2, canvas.height/2);
+      return;
+    }
+    const scene = state.scenes[state.currentIndex];
+    const progress = scene.duration ? state.elapsedInScene/scene.duration : 0;
+    drawScene(ctx, canvas.width, canvas.height, scene, progress);
+    updateTransportUI();
+  }
+
+  /* ---------------- PLAYBACK ---------------- */
+  const playBtn = document.getElementById('playBtn');
+  const scrub = document.getElementById('scrub');
+  const scrubFill = document.getElementById('scrubFill');
+  const timeLabel = document.getElementById('timeLabel');
+  const clockOut = document.getElementById('clockOut');
+  const narrationToggle = document.getElementById('narrationToggle');
+  let rafId = null;
+
+  function setStatus(txt){ document.getElementById('statusText').textContent = txt; }
+
+  function elapsedTotal(){
+    let sum = 0;
+    for(let i=0;i<state.currentIndex;i++) sum += state.scenes[i].duration;
+    return sum + state.elapsedInScene;
+  }
+
+  function updateTransportUI(){
+    const total = totalDuration();
+    const el = elapsedTotal();
+    const pct = total ? (el/total)*100 : 0;
+    scrubFill.style.width = pct+'%';
+    timeLabel.textContent = `${fmtTime(el)} / ${fmtTime(total)}`;
+    clockOut.textContent = `${fmtTime(el)} / ${fmtTime(total)}`;
+  }
+
+  function speakScene(scene){
+    if(!narrationToggle.checked || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(scene.text);
+    utter.rate = 1.0;
+    window.speechSynthesis.speak(utter);
+  }
+
+  function playLoop(ts){
+    if(!state.playing) return;
+    if(state.lastTs === null){ state.lastTs = ts; }
+    const dt = (ts - state.lastTs)/1000;
+    state.lastTs = ts;
+    state.elapsedInScene += dt;
+
+    const scene = state.scenes[state.currentIndex];
+    if(scene && state.elapsedInScene >= scene.duration){
+      state.elapsedInScene = 0;
+      state.currentIndex++;
+      if(state.currentIndex >= state.scenes.length){
+        state.currentIndex = state.scenes.length - 1;
+        state.elapsedInScene = state.scenes[state.currentIndex].duration;
+        stopPlayback();
+        drawCurrentFrame();
+        return;
+      } else {
+        speakScene(state.scenes[state.currentIndex]);
+      }
+    }
+    drawCurrentFrame();
+    rafId = requestAnimationFrame(playLoop);
+  }
+
+  function startPlayback(){
+    if(state.scenes.length===0) return;
+    if(state.currentIndex >= state.scenes.length-1 && state.elapsedInScene >= (state.scenes[state.scenes.length-1]?.duration||0)){
+      state.currentIndex = 0; state.elapsedInScene = 0;
+    }
+    state.playing = true;
+    state.lastTs = null;
+    playBtn.textContent = '⏸';
+    setStatus('Playing');
+    speakScene(state.scenes[state.currentIndex]);
+    rafId = requestAnimationFrame(playLoop);
+  }
+  function stopPlayback(){
+    state.playing = false;
+    playBtn.textContent = '▶';
+    setStatus('Paused');
+    if(rafId) cancelAnimationFrame(rafId);
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }
+  playBtn.addEventListener('click', ()=>{
+    if(state.scenes.length===0){ alert('Generate a storyboard first.'); return; }
+    state.playing ? stopPlayback() : startPlayback();
+  });
+
+  scrub.addEventListener('click', (e)=>{
+    if(state.scenes.length===0) return;
+    const rect = scrub.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (e.clientX-rect.left)/rect.width));
+    let target = pct * totalDuration();
+    for(let i=0;i<state.scenes.length;i++){
+      if(target <= state.scenes[i].duration || i===state.scenes.length-1){
+        state.currentIndex = i;
+        state.elapsedInScene = Math.min(target, state.scenes[i].duration);
+        break;
+      }
+      target -= state.scenes[i].duration;
+    }
+    drawCurrentFrame();
+  });
+
+  /* ---------------- MUSIC UPLOAD ---------------- */
+  const musicDrop = document.getElementById('musicDrop');
+  const musicInput = document.getElementById('musicInput');
+  musicDrop.addEventListener('click', ()=>musicInput.click());
+  musicInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    state.musicFile = file;
+    musicDrop.textContent = `♪ ${file.name}`;
+    musicDrop.classList.add('has-file');
+  });
+
+  /* ---------------- EXPORT ---------------- */
+  const exportBtn = document.getElementById('exportBtn');
+  const exportProgress = document.getElementById('exportProgress');
+  const exportBarFill = document.getElementById('exportBarFill');
+  const exportTxt = document.getElementById('exportTxt');
+  const downloadBox = document.getElementById('downloadBox');
+  const downloadLink = document.getElementById('downloadLink');
+  const recDot = document.getElementById('recDot');
+  const musicVolume = document.getElementById('musicVolume');
+
+  async function renderVideo(){
+    if(state.scenes.length===0){ alert('Generate a storyboard first.'); return; }
+    if(state.playing) stopPlayback();
+
+    exportBtn.disabled = true;
+    exportProgress.classList.add('active');
+    downloadBox.classList.remove('active');
+    recDot.classList.add('live');
+    setStatus('Rendering');
+
+    // preload all images first
+    const imagesToLoad = state.scenes.filter(s=>s.image).map(s=>getImage(s.image));
+    await Promise.all(imagesToLoad.map(img => img.complete ? Promise.resolve() : new Promise(res=>{ img.onload = res; img.onerror = res; })));
+
+    const [w,h] = ASPECTS[currentAspect];
+    const off = document.createElement('canvas');
+    off.width = w; off.height = h;
+    const octx = off.getContext('2d');
+
+    const stream = off.captureStream(30);
+
+    // audio: background music only (speech synthesis output is not capturable cross-browser)
+    let audioCtx, musicEl, destNode;
+    if(state.musicFile){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      musicEl = new Audio(URL.createObjectURL(state.musicFile));
+      musicEl.crossOrigin = 'anonymous';
+      musicEl.loop = true;
+      const src = audioCtx.createMediaElementSource(musicEl);
+      const gain = audioCtx.createGain();
+      gain.gain.value = (parseInt(musicVolume.value,10)||0)/100;
+      destNode = audioCtx.createMediaStreamDestination();
+      src.connect(gain).connect(destNode);
+      // do NOT connect to audioCtx.destination -> avoids double playback through speakers during export
+      destNode.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+    }
+
+    let mimeType = 'video/webm;codecs=vp9,opus';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8,opus';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const chunks = [];
+    recorder.ondataavailable = (e)=>{ if(e.data.size>0) chunks.push(e.data); };
+
+    const finished = new Promise(resolve=>{
+      recorder.onstop = () => resolve();
+    });
+
+    recorder.start(200);
+    if(musicEl){ try{ await musicEl.play(); }catch(err){ console.warn('music autoplay blocked', err); } }
+
+    const total = totalDuration();
+    let sceneIdx = 0, sceneElapsed = 0;
+    const fps = 30;
+    const frameDur = 1/fps;
+
+    await new Promise(resolve=>{
+      function step(){
+        if(sceneIdx >= state.scenes.length){ resolve(); return; }
+        const scene = state.scenes[sceneIdx];
+        const progress = scene.duration ? sceneElapsed/scene.duration : 0;
+        drawScene(octx, w, h, scene, Math.min(1,progress));
+
+        const elapsedGlobal = state.scenes.slice(0,sceneIdx).reduce((s,sc)=>s+sc.duration,0) + sceneElapsed;
+        const pct = total ? Math.min(100,(elapsedGlobal/total)*100) : 0;
+        exportBarFill.style.width = pct+'%';
+        exportTxt.textContent = `Rendering scene ${sceneIdx+1} of ${state.scenes.length} — ${fmtTime(elapsedGlobal)} / ${fmtTime(total)}`;
+
+        sceneElapsed += frameDur;
+        if(sceneElapsed >= scene.duration){
+          sceneElapsed = 0; sceneIdx++;
+        }
+        setTimeout(step, 1000/fps);
+      }
+      step();
+    });
+
+    recorder.stop();
+    if(musicEl){ musicEl.pause(); }
+    if(audioCtx){ await audioCtx.close(); }
+    await finished;
+
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    downloadLink.href = url;
+    downloadBox.classList.add('active');
+    exportProgress.classList.remove('active');
+    recDot.classList.remove('live');
+    exportBtn.disabled = false;
+    setStatus('Render complete');
+  }
+
+  exportBtn.addEventListener('click', ()=>{
+    renderVideo().catch(err=>{
+      console.error(err);
+      alert('Export failed: ' + err.message);
+      exportBtn.disabled = false;
+      exportProgress.classList.remove('active');
+      recDot.classList.remove('live');
+      setStatus('Export failed');
+    });
+  });
+
+  /* ---------------- INIT ---------------- */
+  renderStoryboard();
+  drawCurrentFrame();
+})();
+</script>
+</body>
+</html>
